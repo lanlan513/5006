@@ -77,7 +77,7 @@ export default function ControlPanel({
           onChange={(v) => onParam('fontSize', v, '字径', 'param-fontSize')} />
         <Slider label="字距" value={comp.charGap} min={0} max={1.4} step={0.02} disabled={bodyLocked}
           onChange={(v) => onParam('charGap', v, '字距', 'param-charGap')} format={pct()} />
-        <Slider label="行距" value={comp.colGap} min={0.2} max={2.4} step={0.02} disabled={bodyLocked}
+        <Slider label="行距" value={comp.colGap} min={0.2} max={3.2} step={0.02} disabled={bodyLocked}
           onChange={(v) => onParam('colGap', v, '行距', 'param-colGap')} format={pct()} />
         <div className="param-subhead">留白边界</div>
         {[

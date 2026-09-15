@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pause, Play, RotateCcw, X } from 'lucide-react'
+import { Pause, Play, X } from 'lucide-react'
 import { WORKS, workById, defaultComp, sanitizeComp } from '../data/works'
 import { layoutComposition, analyzeComposition } from '../lib/layout'
 import {
-  createHistory, live, commit, undo, redo, gotoFrame,
+  createHistory, commit, undo, redo, gotoFrame,
   canUndo, canRedo, serializeState, serializeReplay, parseSerialized
 } from '../lib/compositionHistory'
 import { useFontStatuses } from '../lib/fonts'
