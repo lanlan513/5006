@@ -18,6 +18,7 @@ import manifest from './data/fontManifest.json'
 import { FONT_DEFS, FONT_IDS, preloadAllFonts, retryFont, useFontStatuses } from './lib/fonts'
 import { buildGlyphModel, extractChar, isCJKChar } from './lib/resolve'
 import { loadViewState, saveViewState } from './lib/storage'
+import Sandbox from './sandbox/Sandbox'
 import './styles.css'
 
 const FALLBACK_STACK = `'Songti SC','STSong','SimSun','Noto Serif SC',serif`
@@ -67,7 +68,7 @@ function CellContent({ cell, fontStatus, large }) {
 
 /* ---------- 页头 ---------- */
 
-function Header({ fontStatuses, onOpenAbout }) {
+function Header({ fontStatuses, onOpenAbout, view, onViewChange }) {
   const readyCount = FONT_IDS.filter((id) => fontStatuses[id] === 'ready').length
   return (
     <header className="site-header">
@@ -79,6 +80,20 @@ function Header({ fontStatuses, onOpenAbout }) {
             <small>篆 · 隶 · 楷 · 行 · 草</small>
           </span>
         </a>
+        <nav className="view-tabs" aria-label="视图切换">
+          <button
+            className={`view-tab ${view === 'observe' ? 'active' : ''}`}
+            onClick={() => onViewChange('observe')}
+          >
+            字形观察
+          </button>
+          <button
+            className={`view-tab ${view === 'sandbox' ? 'active' : ''}`}
+            onClick={() => onViewChange('sandbox')}
+          >
+            章法沙盘
+          </button>
+        </nav>
         <div className="header-side">
           <span className="font-progress" title="书体字体加载进度">
             <Layers size={14} />
@@ -438,7 +453,7 @@ function Footer() {
         <span className="brand-seal">字</span>
         <span className="brand-text">
           <b>字形演变观察器</b>
-          <small>结构压缩 · 笔画变化 · 形态重组</small>
+          <small>结构压缩 · 笔画变化 · 形态重组 · 章法排布</small>
         </span>
       </div>
       <p>缺样留缺，不作伪补。</p>
@@ -454,6 +469,7 @@ function Footer() {
 
 function App() {
   const saved = useMemo(loadViewState, [])
+  const [view, setView] = useState(saved.view === 'sandbox' ? 'sandbox' : 'observe')
   const [char, setChar] = useState(isCJKChar(saved.char) ? saved.char : '永')
   const [inputValue, setInputValue] = useState(isCJKChar(saved.char) ? saved.char : '永')
   const [stageIndex, setStageIndex] = useState(
@@ -471,8 +487,8 @@ function App() {
   }, [])
 
   useEffect(() => {
-    saveViewState({ char, stage: stageIndex })
-  }, [char, stageIndex])
+    saveViewState({ char, stage: stageIndex, view })
+  }, [char, stageIndex, view])
 
   useEffect(() => {
     if (!playing) {
@@ -494,13 +510,18 @@ function App() {
 
   useEffect(() => {
     const onKey = (event) => {
+      if (view !== 'observe') return
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
       if (event.key === 'ArrowLeft') step(-1)
       if (event.key === 'ArrowRight') step(1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step])
+  }, [step, view])
+
+  useEffect(() => {
+    if (view !== 'observe') setPlaying(false)
+  }, [view])
 
   const handleInput = useCallback((value) => {
     setInputValue(value)
@@ -516,28 +537,34 @@ function App() {
 
   return (
     <>
-      <Header fontStatuses={fontStatuses} onOpenAbout={() => setAboutOpen(true)} />
-      <main>
-        <ControlBar
-          inputValue={inputValue}
-          onInput={handleInput}
-          onPick={handlePick}
-          activeChar={char}
-          curated={model.curated}
-        />
-        <FontStatusBar fontStatuses={fontStatuses} />
-        <CharMeta model={model} />
-        <StageStrip cells={model.cells} stageIndex={stageIndex} onSelect={seek} fontStatuses={fontStatuses} />
-        <FocusPanel
-          model={model}
-          stageIndex={stageIndex}
-          onStep={step}
-          onSeek={seek}
-          playing={playing}
-          onTogglePlay={() => setPlaying((value) => !value)}
-          fontStatuses={fontStatuses}
-        />
-      </main>
+      <Header fontStatuses={fontStatuses} onOpenAbout={() => setAboutOpen(true)} view={view} onViewChange={setView} />
+      {view === 'sandbox' ? (
+        <main>
+          <Sandbox />
+        </main>
+      ) : (
+        <main>
+          <ControlBar
+            inputValue={inputValue}
+            onInput={handleInput}
+            onPick={handlePick}
+            activeChar={char}
+            curated={model.curated}
+          />
+          <FontStatusBar fontStatuses={fontStatuses} />
+          <CharMeta model={model} />
+          <StageStrip cells={model.cells} stageIndex={stageIndex} onSelect={seek} fontStatuses={fontStatuses} />
+          <FocusPanel
+            model={model}
+            stageIndex={stageIndex}
+            onStep={step}
+            onSeek={seek}
+            playing={playing}
+            onTogglePlay={() => setPlaying((value) => !value)}
+            fontStatuses={fontStatuses}
+          />
+        </main>
+      )}
       <Footer />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </>
