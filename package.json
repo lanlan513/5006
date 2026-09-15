@@ -1,29 +1,27 @@
 {
-  "name": "chinese-art-digital-museum",
+  "name": "glyph-evolution-observer",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:client": "vite --port 5187 --strictPort",
-    "dev:server": "PORT=3018 node --watch server/app.js",
+    "dev": "vite --port 5187 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server/app.js"
+    "build:fonts": "node scripts/build-fonts.mjs"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "concurrently": "^9.1.2",
-    "express": "^5.1.0",
     "lucide-react": "^0.468.0",
     "react": "latest",
-    "react-dom": "latest",
-    "vite": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
+    "@vitejs/plugin-react": "latest",
     "autoprefixer": "latest",
+    "fontkit": "^2.0.4",
     "postcss": "latest",
-    "tailwindcss": "latest"
+    "subset-font": "^2.7.0",
+    "tailwindcss": "latest",
+    "vite": "latest"
   }
 }
