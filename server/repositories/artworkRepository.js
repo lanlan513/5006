@@ -1,6 +1,7 @@
 import { artworks, domains, eras, getArtwork } from '../../src/data/museumData.js'
 import { buildTaxonomy, subjectIds, subjects } from '../../src/data/taxonomy.js'
 import { buildTechniqueIndex, techniqueIds, techniques } from '../../src/data/techniques.js'
+import { buildCompositionIndex, compositions, specimens } from '../../src/data/compositions.js'
 
 function includesQuery(artwork, query) {
   const normalizedQuery = query.trim().toLocaleLowerCase('zh-CN')
@@ -92,4 +93,22 @@ export function getTechniqueView() {
 
 export function listTechniques() {
   return techniques
+}
+
+/** 构图法标本视图：下发构法元数据、标本（含归一化标注）与索引计数，作品仍不复制。 */
+export function getCompositionView() {
+  const index = buildCompositionIndex(artworks)
+  const idsByComposition = Object.fromEntries(
+    compositions.map((item) => [item.id, index.idsByComposition.get(item.id)])
+  )
+  return {
+    compositions,
+    specimens,
+    index: {
+      idsByComposition,
+      specimenCounts: index.specimenCounts,
+      annotationCounts: index.annotationCounts,
+      warnings: index.warnings
+    }
+  }
 }

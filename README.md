@@ -4,6 +4,8 @@
 
 第二迭代新增 **「表现技法比较」** 页（导航进入或 `#compare`）：不再按画科（画了什么）组织，而是围绕工笔 / 写意 / 没骨（怎么画）双作品对照。
 
+第三迭代新增 **「构图标本库」** 页（导航进入或 `#composition`）：第三种信息组织——散点透视 / 留白 / 三远法 / 对角构图 / S 形动势（如何经营位置），每种构法以作品为「视觉标本」，切到分析模式后点按关键区域，用辅助线、区域遮罩与视觉中心标记拆解构图关系。
+
 ## 运行
 
 ```bash
@@ -70,6 +72,29 @@ src/data/techniques.js     表现技法分类法（与 taxonomy.js 平行的第�
   - 坐标全部走「视口像素 ↔ 归一化」换算，热点位置与高清图实际像素解耦，换图或容器尺寸变化不错位。
 - 选择状态（技法对 + 两侧作品）持久化到 `localStorage`，刷新仍在；服务端同源下发 `GET /api/techniques`，不可达时本地无缝兜底。
 
+## 第三迭代：构图标本库（`#composition`）——回答「如何经营位置」
+
+画科回答「画了什么」，技法回答「怎么画」，构图层回答「如何经营位置」。五种构图法各自以作品为标本：
+
+| 构图法 | 标本 | 标注构成（数量不固定） |
+| --- | --- | --- |
+| 散点透视 | 《清明上河图》《洛神赋图》 | 三段区域遮罩 + 段落分界辅助线 + 移动方向箭头，6 处 |
+| 留白 | 《渔庄秋霁图》《荷石水禽图》《踏歌图》 | 空水/云烟遮罩 + 岸线、荷梗辅助线，3–5 处 |
+| 三远法 | 《早春图》《溪山行旅图》 | 高/深/平三层遮罩 + 三种视线箭头 + 主峰轴线，5–7 处 |
+| 对角构图 | 《踏歌图》《芙蓉锦鸡图》 | 虚实两角遮罩 + 对角线/视线/枝势线，5 处 |
+| S 形动势 | 《双喜图》《富春山居图》 | 之字/水脉折线 + 转折节点遮罩，4–5 处 |
+
+- **标注数量与形状刻意不统一**：全库 11 件标本、标注数 3–7 处不等；`kind` 为辅助线 `guide`（line/arrow/polyline）、区域遮罩 `mask`（rect/ellipse/polygon）、视觉中心 `focus`（crosshair）。数据由 `buildCompositionIndex()` 逐标注校验形状与坐标，冒烟测试强制「数量至少 3 种取值、形状覆盖齐全」。
+- **图片坐标系与 SVG 标注层分离（核心技术点）**：
+  - 标注只存 **图片自身坐标系下的归一化值（0~1）**（`src/data/compositions.js`），与图片实际像素、屏幕像素、缩放倍数全部无关；
+  - 图片层 = contain 适配 + `scale` 放大 + `focus` 平移（`SpecimenViewer` 中 `imagePlacement`）；
+  - **SVG 标注层**与 `<img>` 同处一个随缩放/平移变换的 wrapper，`viewBox` 固定为图片自然像素、`preserveAspectRatio="none"`，画线只需「归一化值 × 自然尺寸」，`vector-effect: non-scaling-stroke` 保证线宽恒定、箭头清晰；
+  - 编号热点是 wrapper 内以**百分比定位**的 HTML 按钮，尺寸不随缩放变化、始终可点；
+  - 容器用 `ResizeObserver` 监听，窗口尺寸变化 → contain 重算 → SVG 与热点随 wrapper 自动重排。已用换算单测验证：三种窗口 × 三种缩放/平移状态下，标注屏幕位置与图片像素位置恒等。
+- **原图 ↔ 分析快速切换**：分段开关（或按 `A` 键、Esc 取消选中）只切换覆盖层显隐，图片层与视图状态不变，切换瞬间完成且不丢缩放位置。
+- 点按标注（图形本体或编号、右侧清单皆可）→ 视图以缓动动画放大到该标注包围盒（`viewForBounds`），底部读出该处解释；滚轮/双指捏合以指针为焦点缩放、拖动平移、双击复位、右下小地图定位，交互与比较浏览器同构但作用于单幅标本。
+- **零复制**：标本只持有 `artworkId`，作品仍在 `museumData.js` 唯一存在；《踏歌图》被「对角构图」与「留白」两件标本引用。选择（构法/标本/模式）持久化到 `localStorage`；服务端 `GET /api/compositions` 同源下发并校验，不可达时本地无缝兜底。
+
 ## 切换画科保持浏览位置
 
 `TaxonomySection` 为每个画科记忆两类位置（内存 + `localStorage`，刷新也在）：
@@ -92,10 +117,13 @@ src/data/techniques.js     表现技法分类法（与 taxonomy.js 平行的第�
 src/
   data/taxonomy.js                 画科分类法 + 反向索引 + 数据校验
   data/techniques.js               表现技法分类法（工笔/写意/没骨）+ 六维对照 + 反向索引
+  data/compositions.js             构图法分类法（散点/留白/三远/对角/S形）+ 归一化标注 + 校验
   data/museumData.js               作品数据（subjectIds / techniqueIds / art 描述符 / 笔墨热点）
   lib/painting.js                  离线水墨 SVG 生成器（含泼墨/没骨 motif）+ 自然尺寸/适配换算
   lib/storage.js                   收藏与浏览位置持久化
   components/
+    CompositionLab.jsx             构图标本库页：构法卡片 / 标本选择 / 标注清单
+    SpecimenViewer.jsx             标本浏览器：原图↔分析、缩放平移捏合、SVG 标注层（坐标分离）
     CompareStudio.jsx              技法比较页：技法槽位 / 维度矩阵 / 作品重组
     CompareViewer.jsx              双作品同步浏览器（缩放、拖动、捏合、热点、小地图）
     TaxonomySection.jsx            一级入口、滚动记忆、搜索覆盖、关系检查器
@@ -106,7 +134,7 @@ src/
     ArtworkDrawer.jsx              作品详情（多科归属与语境化观察点）
     common.jsx                     懒加载图片 / 观察点 / 空态 / 缺字段标记
 server/
-  app.js                           /api/taxonomy、/api/techniques、/api/artworks?subjectId=…
+  app.js                           /api/taxonomy、/api/techniques、/api/compositions、/api/artworks?subjectId=…
   repositories/artworkRepository.js 与前端共用 data/ 下的同一份数据
 ```
 

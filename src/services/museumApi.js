@@ -58,6 +58,13 @@ export async function getTechniques() {
   return data
 }
 
+/** 服务端构建的构图法标本库，失败由前端本地 compositions.js 兜底。 */
+export async function getCompositions() {
+  const data = await request('/compositions')
+  if (!data || !Array.isArray(data.compositions) || !Array.isArray(data.specimens)) throw new Error('构图法数据格式无效。')
+  return data
+}
+
 export async function getFavorites(visitorId) {
   const favorites = await request('/favorites', { headers: { 'X-Visitor-Id': visitorId } })
   if (!Array.isArray(favorites)) throw new Error('收藏数据格式无效。')

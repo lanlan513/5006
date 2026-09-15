@@ -22,6 +22,7 @@ const techniqueMod = await vite.ssrLoadModule('/src/data/techniques.js')
 const painting = await vite.ssrLoadModule('/src/lib/painting.js')
 const TaxonomySection = (await vite.ssrLoadModule('/src/components/TaxonomySection.jsx')).default
 const CompareStudio = (await vite.ssrLoadModule('/src/components/CompareStudio.jsx')).default
+const CompositionLab = (await vite.ssrLoadModule('/src/components/CompositionLab.jsx')).default
 
 const { artworks } = museum
 const { buildTaxonomy, selectArtworksBySubject, subjects, getSubject } = taxonomyMod
@@ -124,6 +125,68 @@ assert(compareHtml.includes('cmp-stage'), '比较页应含双画浏览器')
 assert(compareHtml.includes('cmp-hotspot'), '比较页应渲染笔墨热点')
 assert(compareHtml.includes('比较维度'), '比较页应含维度矩阵')
 console.log('比较页 SSR | OK |', compareHtml.length, '字节')
+
+/* ---------------- 构图标本库（第三迭代） ---------------- */
+console.log('\n— 构图标本库 —')
+const compositionMod = await vite.ssrLoadModule('/src/data/compositions.js')
+const {
+  compositions: compList, specimens: specimenList, buildCompositionIndex, selectSpecimens,
+  annotationBounds, annotationAnchor, getComposition
+} = compositionMod
+const compIndex = buildCompositionIndex(artworks)
+
+// 五种构图法都必须有标本，且全部标本引用到真实存在的作品。
+assert(compList.length === 5, '应有 5 种构图法')
+for (const composition of compList) {
+  const rows = selectSpecimens(composition.id)
+  assert(rows.length >= 2, `${composition.name} 至少 2 件标本`)
+  rows.forEach((specimen) => {
+    assert(artworkById.has(specimen.artworkId), `${composition.name} 标本引用的作品需存在：${specimen.artworkId}`)
+  })
+  console.log(`${composition.name} | ${rows.length} 件标本`)
+}
+assert(specimenList.length >= 10, `标本总数应 ≥10，实际 ${specimenList.length}`)
+assert(compIndex.warnings.length === 0, '构图标本数据不应有告警：' + compIndex.warnings.map((w) => w.message).join('；'))
+
+// 标注数量与形状「不固定」：全库标注数至少有 3 种不同取值，且覆盖三类标注与多种形状。
+assert(compIndex.distinctAnnotationCounts.size >= 3, `标注数量应不统一（≥3 种取值），实际 ${[...compIndex.distinctAnnotationCounts].join('/')}`)
+console.log('标注数量分布 |', compIndex.annotationCounts.join(', '), '处/标本')
+assert(compIndex.shapeUsage.guide.length >= 2, '辅助线应覆盖 ≥2 种形状')
+assert(compIndex.shapeUsage.mask.length >= 2, '遮罩应覆盖 ≥2 种形状')
+assert(compIndex.shapeUsage.focus.includes('crosshair'), '视觉中心应为 crosshair')
+console.log('形状覆盖 |', Object.entries(compIndex.shapeUsage).map(([k, v]) => `${k}:${v.join('/')}`).join(' · '))
+
+// 每个标本：至少 2 处标注、必含视觉中心、所有归一化坐标落在 0~1、包围盒可计算。
+for (const specimen of specimenList) {
+  assert(specimen.annotations.length >= 2, `${specimen.id} 至少 2 处标注`)
+  assert(specimen.annotations.some((a) => a.kind === 'focus'), `${specimen.id} 应含视觉中心标记`)
+  specimen.annotations.forEach((annotation) => {
+    assert(annotation.label && annotation.text, `${specimen.id} 标注需有名称与解释`)
+    const anchor = annotationAnchor(annotation)
+    assert([anchor.x, anchor.y].every((n) => n >= 0 && n <= 1), `${specimen.id} 锚点需在 0~1`)
+    const bounds = annotationBounds(annotation)
+    assert(bounds.w >= 0 && bounds.h >= 0 && bounds.x >= 0 && bounds.y >= 0, `${specimen.id} 包围盒非法`)
+  })
+}
+console.log('归一化坐标 / 锚点 / 包围盒校验 | OK')
+
+// 一件作品可被多种构图标本引用（零复制：作品记录仍只在 museumData 中一份）。
+const usageCount = new Map()
+for (const specimen of specimenList) usageCount.set(specimen.artworkId, (usageCount.get(specimen.artworkId) ?? 0) + 1)
+const reused = [...usageCount].filter(([, n]) => n > 1)
+assert(reused.length >= 1, '应至少有 1 件作品被多种构图法引用')
+console.log('多构图引用（零复制）|', reused.map(([id]) => artworkById.get(id).title).join('、'))
+assert(getComposition('nope') === null, '未知构图法应返回 null')
+
+// 构图层 SSR：应渲染构法 tabs、原图/分析模式切换、SVG 标注层与编号热点。
+const compHtml = renderToString(h(CompositionLab, { artworkRows: artworks, onOpen: () => {}, statusMessage: '' }))
+assert(compHtml.length > 4000, '构图页渲染过短')
+assert(compHtml.includes('散点透视') && compHtml.includes('三远法'), '构图页应含构法名')
+assert(compHtml.includes('sp-mode-switch'), '构图页应含原图/分析模式切换')
+assert(compHtml.includes('sp-svg'), '构图页应含 SVG 标注层')
+assert(compHtml.includes('sp-pin'), '构图页应渲染编号热点')
+assert(compHtml.includes('annotation-list'), '构图页应含标注清单')
+console.log('构图页 SSR | OK |', compHtml.length, '字节')
 
 await vite.close()
 console.log(failures === 0 ? '\n全部冒烟检查通过 ✓' : `\n${failures} 项失败 ✗`)

@@ -3,10 +3,11 @@ import { createRoot } from 'react-dom/client'
 import { ArrowUpRight, Bookmark, ChevronDown, Menu, Search, X } from 'lucide-react'
 import { artworks as localArtworks, eras as localEras, getFeatured, getArtworks as queryLocal } from './data/museumData'
 import { buildTaxonomy, subjects } from './data/taxonomy'
-import { getArtworks, getEras, getFeaturedArtwork, getFavorites, getTaxonomy, getTechniques, updateFavorites } from './services/museumApi'
+import { getArtworks, getEras, getFeaturedArtwork, getFavorites, getTaxonomy, getTechniques, getCompositions, updateFavorites } from './services/museumApi'
 import { getVisitorId, loadFavorites, saveFavorites } from './lib/storage'
 import TaxonomySection from './components/TaxonomySection'
 import CompareStudio from './components/CompareStudio'
+import CompositionLab from './components/CompositionLab'
 import ArtworkDrawer from './components/ArtworkDrawer'
 import { LazyPainting, MissingText } from './components/common'
 import './styles.css'
@@ -23,6 +24,7 @@ function Header({ query, setQuery, view, onNavigate }) {
       <nav className={open ? 'main-nav is-open' : 'main-nav'}>
         <a href="#taxonomy" className={view === 'taxonomy' ? 'is-current' : ''} onClick={(e) => { e.preventDefault(); go('taxonomy') }}>画科分类</a>
         <a href="#compare" className={view === 'compare' ? 'is-current' : ''} onClick={(e) => { e.preventDefault(); go('compare') }}>表现技法比较</a>
+        <a href="#composition" className={view === 'composition' ? 'is-current' : ''} onClick={(e) => { e.preventDefault(); go('composition') }}>构图标本库</a>
         {view === 'taxonomy' ? subjects.map((subject) => (
           <a key={subject.id} href={`#${subject.id}`} onClick={() => setOpen(false)}>{subject.name}</a>
         )) : null}
@@ -34,14 +36,14 @@ function Header({ query, setQuery, view, onNavigate }) {
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="检索题材、构图、对象…" aria-label="检索作品" />
             {query ? <button className="search-clear" onClick={() => setQuery('')} aria-label="清空检索"><X size={13} /></button> : null}
           </label>
-        ) : <span className="header-mode-tag">怎么画 · HOW IT IS PAINTED</span>}
+        ) : view === 'compare' ? <span className="header-mode-tag">怎么画 · HOW IT IS PAINTED</span> : <span className="header-mode-tag">经营位置 · COMPOSITION</span>}
         <button className="mobile-menu" onClick={() => setOpen(!open)} aria-label="打开导航">{open ? <X size={20} /> : <Menu size={20} />}</button>
       </div>
     </div>
   </header>
 }
 
-function Hero({ featured, onExplore, onCompare, isFavorite, onFavorite }) {
+function Hero({ featured, onExplore, onCompare, onComposition, isFavorite, onFavorite }) {
   return <section className="hero taxonomy-hero" id="top">
     <div className="hero-copy">
       <p className="eyebrow"><span className="eyebrow-line" />画有分科 · 观有各法</p>
@@ -56,6 +58,9 @@ function Hero({ featured, onExplore, onCompare, isFavorite, onFavorite }) {
       </div>
       <a className="hero-compare-link" href="#compare" onClick={(e) => { e.preventDefault(); onCompare() }}>
         或换一种看法：按「工笔 / 写意 / 没骨」比较怎么画 →
+      </a>
+      <a className="hero-compare-link" href="#composition" onClick={(e) => { e.preventDefault(); onComposition() }}>
+        再换一种：拆解「散点、留白、三远」的构图标本 →
       </a>
     </div>
     <div className="hero-visual">
@@ -101,7 +106,15 @@ function Footer() {
 }
 
 function viewFromHash() {
-  return window.location.hash.startsWith('#compare') ? 'compare' : 'taxonomy'
+  if (window.location.hash.startsWith('#compare')) return 'compare'
+  if (window.location.hash.startsWith('#composition')) return 'composition'
+  return 'taxonomy'
+}
+
+function hashForView(next) {
+  if (next === 'compare') return '#compare'
+  if (next === 'composition') return '#composition'
+  return '#taxonomy'
 }
 
 function subjectFromHash() {
@@ -136,7 +149,9 @@ function App() {
     getFeaturedArtwork().then((item) => alive && setFeatured(item)).catch(() => {})
     getEras().then((list) => alive && setEras(list)).catch(() => {})
     // 技法比较页同样以本地数据构建索引，仅在服务不可达时给出提示。
-    getTechniques().catch(() => {}).finally(() => {})
+    getTechniques().catch(() => {})
+    // 构图标本库由同一份作品集合在本地构建索引，服务仅作同源下发与校验。
+    getCompositions().catch(() => {})
     return () => { alive = false }
   }, [])
 
@@ -180,7 +195,7 @@ function App() {
   }, [])
   const navigate = (next) => {
     setView(next)
-    const target = next === 'compare' ? '#compare' : '#taxonomy'
+    const target = hashForView(next)
     if (window.location.hash !== target) window.history.pushState(null, '', target)
   }
   const changeSubject = (id) => {
@@ -206,11 +221,14 @@ function App() {
         featured={featured}
         onExplore={scrollToTaxonomy}
         onCompare={() => navigate('compare')}
+        onComposition={() => navigate('composition')}
         isFavorite={favorites.includes(featured.id)}
         onFavorite={() => toggleFavorite(featured.id)}
       />
       {view === 'compare' ? (
         <CompareStudio artworkRows={artworkRows} onOpen={setSelected} statusMessage={statusMessage} />
+      ) : view === 'composition' ? (
+        <CompositionLab artworkRows={artworkRows} onOpen={setSelected} statusMessage={statusMessage} />
       ) : (
         <TaxonomySection
           activeSubjectId={activeSubjectId}
