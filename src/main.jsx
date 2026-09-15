@@ -5,6 +5,7 @@ import { domains as fallbackDomains, getArtworks as getLocalArtworks, getFeature
 import { getDomains, getArtworks, getFeaturedArtwork, getFavorites, updateFavorites } from './services/museumApi'
 import { getVisitorId, loadFavorites, loadViewState, saveFavorites, saveViewState } from './lib/storage'
 import ArtTimeline from './components/ArtTimeline'
+import ConceptChain from './components/ConceptChain'
 import './styles.css'
 
 function ImageWithFallback({ src, alt, className, ...props }) {
@@ -24,6 +25,7 @@ function Header({ onSearch, searchValue, setSearchValue }) {
       <nav className={open ? 'main-nav is-open' : 'main-nav'}>
         <a href="#collection">藏品研究</a>
         <a href="#timeline">时间与风格</a>
+        <a href="#concept-chain">观念关系链</a>
         <a href="#method">观看方法</a>
       </nav>
       <div className="header-actions">
@@ -190,7 +192,7 @@ function App() {
     return nextFavorites
   })
   const scrollToCollection = () => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
-  return <><Header onSearch={setSearchValue} searchValue={searchValue} setSearchValue={setSearchValue} /><main><Hero featured={featured} onExplore={scrollToCollection} isFavorite={favorites.includes(featured.id)} onFavorite={() => toggleFavorite(featured.id)} /><ResearchIntro /><Collection activeDomain={activeDomain} setActiveDomain={setActiveDomain} domains={domains} results={results} searchValue={searchValue} onOpen={setSelected} favorites={favorites} onFavorite={toggleFavorite} isLoading={isLoading} statusMessage={statusMessage} /><ArtTimeline /></main><Footer /><DetailPanel artwork={selected} onClose={() => setSelected(null)} isFavorite={selected ? favorites.includes(selected.id) : false} onFavorite={toggleFavorite} /></>
+  return <><Header onSearch={setSearchValue} searchValue={searchValue} setSearchValue={setSearchValue} /><main><Hero featured={featured} onExplore={scrollToCollection} isFavorite={favorites.includes(featured.id)} onFavorite={() => toggleFavorite(featured.id)} /><ResearchIntro /><Collection activeDomain={activeDomain} setActiveDomain={setActiveDomain} domains={domains} results={results} searchValue={searchValue} onOpen={setSelected} favorites={favorites} onFavorite={toggleFavorite} isLoading={isLoading} statusMessage={statusMessage} /><ArtTimeline /><ConceptChain /></main><Footer /><DetailPanel artwork={selected} onClose={() => setSelected(null)} isFavorite={selected ? favorites.includes(selected.id) : false} onFavorite={toggleFavorite} /></>
 }
 
 createRoot(document.getElementById('root')).render(<App />)

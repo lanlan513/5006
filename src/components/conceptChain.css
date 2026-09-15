@@ -1,0 +1,112 @@
+/* 观念关系链 · 近现代中国美术观念变迁 */
+.cc { background: #161614; border-top: 1px solid #2c2b27; padding: 110px 0 130px; }
+.cc-inner { max-width: 1380px; margin: auto; padding: 0 36px; }
+.cc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; }
+.cc-head h2 { font-family: 'Noto Serif SC', serif; font-weight: 500; font-size: clamp(34px, 4vw, 59px); line-height: 1.25; margin: 28px 0 0; }
+.cc-head h2 i { color: #c99e74; font-style: normal; }
+.cc-head-note { max-width: 320px; color: #89867e; font-size: 11px; line-height: 1.9; margin: 0 0 8px; }
+
+/* —— 转折点关系链 —— */
+.cc-chain { display: flex; align-items: stretch; margin-top: 56px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
+.cc-chain-item { display: flex; align-items: center; flex: 1 0 auto; min-width: 0; }
+.cc-chain-link { flex: 0 0 44px; height: 1px; background: linear-gradient(90deg, #4a463d, #6b5b43); position: relative; }
+.cc-chain-link::after { content: ''; position: absolute; right: 0; top: -3px; border-left: 7px solid #6b5b43; border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+.cc-chain-node { flex: 1; min-width: 150px; text-align: left; background: #1d1c19; border: 1px solid #38362f; color: #c9c5bb; padding: 15px 16px 14px; transition: border-color .2s, background .2s, transform .2s; }
+.cc-chain-node:hover { border-color: #8a6f4d; transform: translateY(-2px); }
+.cc-chain-node.active { background: #242118; border-color: #c79a6b; }
+.cc-chain-node.active b { color: #e8d9c2; }
+.cc-chain-year { display: block; font-size: 9px; letter-spacing: .12em; color: #8a857a; margin-bottom: 7px; }
+.cc-chain-node.active .cc-chain-year { color: #c79a6b; }
+.cc-chain-node b { font-family: 'Noto Serif SC', serif; font-weight: 500; font-size: 15px; line-height: 1.4; }
+
+/* —— 前后对照 —— */
+.cc-compare { display: grid; grid-template-columns: 1fr 300px 1fr; gap: 26px; margin-top: 46px; animation: cc-fade .4s ease-out; }
+@keyframes cc-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.cc-column { border: 1px solid #33312b; background: #1a1916; padding: 24px 24px 20px; min-width: 0; }
+.cc-column-before { border-top: 2px solid #6b6558; }
+.cc-column-after { border-top: 2px solid #c79a6b; }
+.cc-column-title { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .14em; color: #9a958a; margin-bottom: 18px; }
+.cc-column-after .cc-column-title { color: #c79a6b; }
+.cc-concepts { display: grid; gap: 12px; }
+.cc-concept { border-left: 2px solid #45423a; padding: 2px 0 2px 13px; }
+.cc-column-after .cc-concept { border-left-color: #8a6f4d; }
+.cc-concept b { font-family: 'Noto Serif SC', serif; font-weight: 500; font-size: 16px; color: #e6e1d6; }
+.cc-concept span { float: right; font-size: 9px; color: #7c786e; margin-top: 5px; }
+.cc-concept p { clear: both; color: #8f8b81; font-size: 11px; line-height: 1.8; margin: 6px 0 0; }
+.cc-works { border-top: 1px solid #2e2c27; margin-top: 20px; padding-top: 15px; }
+.cc-works-label { font-size: 9px; letter-spacing: .18em; color: #6f6b62; margin-bottom: 12px; }
+.cc-work { padding: 9px 0; border-bottom: 1px dashed #2c2a25; }
+.cc-work:last-child { border-bottom: 0; }
+.cc-work b { font-size: 12px; font-weight: 500; color: #d5cfc2; }
+.cc-work span { font-size: 10px; color: #8a857a; margin-left: 8px; }
+.cc-work p { font-size: 10px; color: #75716a; line-height: 1.7; margin: 4px 0 0; }
+
+/* —— 中间转折点卡片 —— */
+.cc-pivot { text-align: center; padding: 6px 4px; }
+.cc-pivot-year { font-size: 10px; letter-spacing: .2em; color: #c79a6b; }
+.cc-pivot h3 { font-family: 'Noto Serif SC', serif; font-weight: 500; font-size: 26px; line-height: 1.35; color: #efe9dc; margin: 12px 0 22px; }
+.cc-pivot-trigger, .cc-pivot-people { border: 1px solid #33312b; background: #1a1916; text-align: left; padding: 15px 16px; margin-bottom: 12px; }
+.cc-pivot-trigger > span, .cc-pivot-people > span { display: flex; align-items: center; gap: 6px; font-size: 9px; letter-spacing: .16em; color: #7c786e; margin-bottom: 10px; }
+.cc-pivot-trigger p { font-size: 10px; color: #8f8b81; line-height: 1.75; margin: 10px 0 0; }
+.cc-pivot-people > div { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* —— 实体芯片 —— */
+.cc-chip { display: inline-flex; align-items: baseline; gap: 6px; border: 1px solid color-mix(in srgb, var(--chip-color) 45%, transparent); padding: 5px 9px; font-size: 10px; }
+.cc-chip i { font-style: normal; color: var(--chip-color); font-size: 8px; letter-spacing: .1em; }
+.cc-chip em { font-style: normal; color: #6f6b62; font-size: 8px; }
+.cc-chip b { font-weight: 500; color: #ddd7ca; }
+
+/* —— 解释路径 —— */
+.cc-paths { margin-top: 54px; border-top: 1px solid #33312b; padding-top: 30px; }
+.cc-paths-head { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+.cc-paths-title { font-family: 'Noto Serif SC', serif; font-size: 19px; color: #e6e1d6; }
+.cc-paths-title em { font-style: normal; font-family: 'Noto Sans SC', sans-serif; font-size: 11px; color: #7c786e; margin-left: 8px; }
+.cc-path-tabs { display: flex; gap: 7px; flex-wrap: wrap; }
+.cc-path-tab { border: 1px solid #4a4842; background: transparent; color: #99958d; padding: 7px 14px; font-size: 10px; transition: color .2s, border-color .2s; }
+.cc-path-tab:hover, .cc-path-tab.active { border-color: #c79a6b; color: #c79a6b; }
+.cc-path-summary { color: #a9a49a; font-size: 12px; line-height: 1.9; margin: 18px 0 22px; max-width: 640px; }
+.cc-path { content-visibility: auto; contain-intrinsic-size: auto 420px; }
+.cc-path-meta { display: flex; gap: 18px; align-items: center; font-size: 9px; color: #6f6b62; letter-spacing: .06em; margin-bottom: 16px; flex-wrap: wrap; }
+.cc-path-meta svg { vertical-align: -2px; margin-right: 4px; }
+.cc-path-hint { color: #a8875e; border: 1px dashed #5c4c36; padding: 3px 8px; }
+
+/* —— 原因树 —— */
+.cc-cause { position: relative; }
+.cc-cause .cc-cause { margin-left: calc(14px + var(--depth) * 10px); }
+.cc-children { border-left: 1px solid #33312b; padding-left: 18px; margin: 10px 0 4px 8px; display: grid; gap: 10px; }
+.cc-cause-card { border: 1px solid #33312b; border-left: 2px solid var(--chip-color, #c79a6b); background: #1a1916; padding: 13px 16px; max-width: 620px; }
+.cc-cause-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cc-cause-type { font-size: 8px; letter-spacing: .12em; color: var(--chip-color, #c79a6b); border: 1px solid color-mix(in srgb, var(--chip-color, #c79a6b) 45%, transparent); padding: 2px 6px; }
+.cc-cause-head b { font-family: 'Noto Serif SC', serif; font-weight: 500; font-size: 14px; color: #e6e1d6; }
+.cc-cause-years { font-size: 9px; color: #7c786e; }
+.cc-cause-depth { margin-left: auto; font-size: 8px; color: #57544d; letter-spacing: .1em; }
+.cc-cause-card p { font-size: 11px; color: #a09b90; line-height: 1.8; margin: 8px 0 0; }
+.cc-cause-card .cc-cause-summary { color: #75716a; font-size: 10px; }
+.cc-more { display: inline-flex; align-items: center; gap: 5px; border: 1px dashed #4a463d; background: transparent; color: #a8875e; font-size: 10px; padding: 6px 12px; margin: 8px 0 4px 26px; transition: border-color .2s, color .2s; }
+.cc-more:hover { border-color: #c79a6b; color: #d8b98d; }
+.cc-alt-roots { margin-top: 22px; border-top: 1px dashed #33312b; padding-top: 16px; }
+.cc-alt-label { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #8fa8c8; letter-spacing: .1em; margin-bottom: 12px; }
+
+/* —— 深层横向路径条 —— */
+.cc-strip { display: flex; gap: 12px; overflow-x: auto; padding: 12px 4px 14px; margin-top: 8px; border: 1px dashed #3a382f; background: #181714; scrollbar-width: thin; }
+.cc-strip-item { flex: 0 0 240px; border: 1px solid #33312b; background: #1d1c19; padding: 13px 15px; }
+.cc-strip-depth { display: block; font-size: 8px; letter-spacing: .14em; color: #a8875e; margin-bottom: 7px; }
+.cc-strip-item > b { font-family: 'Noto Serif SC', serif; font-weight: 500; font-size: 13px; color: #e6e1d6; }
+.cc-strip-item > p { font-size: 10px; color: #8f8b81; line-height: 1.75; margin: 7px 0 0; }
+.cc-strip-item .cc-more { margin: 10px 0 0; }
+.cc-strip-item .cc-strip { margin-top: 10px; }
+
+@media (max-width: 1020px) {
+  .cc-compare { grid-template-columns: 1fr; }
+  .cc-pivot { order: -1; border-bottom: 1px solid #33312b; padding-bottom: 26px; }
+}
+@media (max-width: 650px) {
+  .cc { padding: 74px 0 84px; }
+  .cc-inner { padding: 0 18px; }
+  .cc-head { display: block; }
+  .cc-head-note { margin-top: 18px; }
+  .cc-chain-node { min-width: 132px; }
+  .cc-cause .cc-cause { margin-left: 8px; }
+  .cc-children { padding-left: 10px; }
+  .cc-cause-depth { display: none; }
+}
