@@ -13,6 +13,8 @@ import { TIER_HIGH, TIER_MEDIUM, TIER_LOW } from './capabilities'
 const PAPER_COLOR = 0xe3dcc9
 const CAMERA_NEAR = 0.1
 const CAMERA_FAR = 120
+// 初始雾密度与 _applyFog(0.32) 的结果一致，保证首帧到应用参数之间无跳变
+const INITIAL_FOG_DENSITY = 0.002 + 0.32 * 0.024
 
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
@@ -55,7 +57,7 @@ export class LandscapeSpace {
 
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(PAPER_COLOR)
-    this.scene.fog = new THREE.FogExp2(PAPER_COLOR, FOG_BASE_DENSITY)
+    this.scene.fog = new THREE.FogExp2(PAPER_COLOR, INITIAL_FOG_DENSITY)
 
     this.camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, CAMERA_NEAR, CAMERA_FAR)
     const artist = VIEW_MAP[ARTIST_VIEW]
@@ -78,7 +80,10 @@ export class LandscapeSpace {
     this.controls.update()
     this.controls.addEventListener('start', () => { this._cancelTween() })
 
-    this._setupComposer(dpr)
+    // 低档初始即关闭后处理：BokehPass 每帧要额外渲染一遍深度，低端 GPU 直接承担会拖垮帧率；
+    // 景深滑块在无 bokehPass 时安全空转，雾色层次仍可暗示空间虚化。
+    if (tier !== TIER_LOW) this._setupComposer(dpr)
+    else { this.composer = null; this.bokehPass = null }
     this._applyLight()
     this._applyFog()
     this._applyDepth()
@@ -315,7 +320,7 @@ export class LandscapeSpace {
     for (const sprite of this.landscape.mistSprites) {
       sprite.position.x = sprite.userData.baseX + Math.sin(seconds * 0.08 + sprite.userData.phase) * sprite.userData.drift
     }
-    this.boat.position.x = -3.4 + Math.sin(seconds * 0.12) * 0.9
+    this.landscape.boat.position.x = -3.4 + Math.sin(seconds * 0.12) * 0.9
 
     this._updateTween(now)
     this.controls.update()
