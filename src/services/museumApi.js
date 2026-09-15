@@ -14,9 +14,10 @@ async function request(path, options) {
   return payload.data
 }
 
-export function getArtworks({ domain = '全部', query = '' } = {}) {
+export function getArtworks({ domain = '全部', query = '', subjectId = null } = {}) {
   const parameters = new URLSearchParams()
   if (domain !== '全部') parameters.set('domain', domain)
+  if (subjectId) parameters.set('subjectId', subjectId)
   if (query.trim()) parameters.set('query', query.trim())
   const suffix = parameters.size ? `?${parameters}` : ''
   return request(`/artworks${suffix}`).then((data) => {
@@ -42,6 +43,14 @@ export async function getEras() {
   if (!Array.isArray(data) || !data.every((item) => item && typeof item.label === 'string')) throw new Error('时间轴数据格式无效。')
   return data
 }
+
+/** 服务端构建的画科分类法（分类元数据 + ID 索引 + 计数与告警），失败由本地数据兜底。 */
+export async function getTaxonomy() {
+  const data = await request('/taxonomy')
+  if (!data || !Array.isArray(data.subjects) || !data.taxonomy) throw new Error('分类法数据格式无效。')
+  return data
+}
+
 export async function getFavorites(visitorId) {
   const favorites = await request('/favorites', { headers: { 'X-Visitor-Id': visitorId } })
   if (!Array.isArray(favorites)) throw new Error('收藏数据格式无效。')

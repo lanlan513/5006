@@ -1,13 +1,14 @@
 import express from 'express'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { findArtwork, getFeaturedArtwork, listArtworks, listDomains, listEras } from './repositories/artworkRepository.js'
+import { findArtwork, getFeaturedArtwork, getTaxonomyView, listArtworks, listDomains, listEras, listSubjects } from './repositories/artworkRepository.js'
 import { listFavorites, replaceFavorites } from './repositories/favoriteRepository.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3018
 const projectDirectory = join(dirname(fileURLToPath(import.meta.url)), '..')
 const allowedDomains = new Set(listDomains())
+const allowedSubjectIds = new Set(listSubjects().map((subject) => subject.id))
 
 app.use(express.json({ limit: '20kb' }))
 
@@ -17,8 +18,13 @@ app.get('/api/health', (_request, response) => {
 
 app.get('/api/artworks', (request, response) => {
   const domain = typeof request.query.domain === 'string' && allowedDomains.has(request.query.domain) ? request.query.domain : '全部'
+  const subjectId = typeof request.query.subjectId === 'string' && allowedSubjectIds.has(request.query.subjectId) ? request.query.subjectId : null
   const query = typeof request.query.query === 'string' ? request.query.query.slice(0, 80) : ''
-  response.json({ data: listArtworks({ domain, query }) })
+  response.json({ data: listArtworks({ domain, query, subjectId }) })
+})
+
+app.get('/api/taxonomy', (_request, response) => {
+  response.json({ data: getTaxonomyView() })
 })
 
 app.get('/api/artworks/featured', (_request, response) => {
