@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowUpRight, Bookmark, ChevronDown, Compass, Eye, Library, Menu, Search, Sparkles, X } from 'lucide-react'
-import { domains as fallbackDomains, eras as fallbackEras, getArtworks as getLocalArtworks, getFeatured as getLocalFeatured } from './data/museumData'
-import { getDomains, getEras, getArtworks, getFeaturedArtwork, getFavorites, updateFavorites } from './services/museumApi'
+import { domains as fallbackDomains, getArtworks as getLocalArtworks, getFeatured as getLocalFeatured } from './data/museumData'
+import { getDomains, getArtworks, getFeaturedArtwork, getFavorites, updateFavorites } from './services/museumApi'
 import { getVisitorId, loadFavorites, loadViewState, saveFavorites, saveViewState } from './lib/storage'
+import ArtTimeline from './components/ArtTimeline'
 import './styles.css'
 
 function ImageWithFallback({ src, alt, className, ...props }) {
@@ -101,10 +102,6 @@ function Collection({ activeDomain, setActiveDomain, domains, results, searchVal
   </section>
 }
 
-function Timeline({ eras }) {
-  return <section className="timeline-section" id="timeline"><div className="section-kicker">/ 时间轴</div><div className="timeline-head"><h2>风格从时间里<br /><i>慢慢长出来。</i></h2><p>把朝代当作坐标，而不是答案。横向移动，看看材料、观看与信仰如何彼此影响。</p></div><div className="era-list">{eras.map((era, index) => <div className="era-item" key={era.label}><div className="era-dot" style={{ backgroundColor: era.color }} /><div className="era-index">0{index + 1}</div><h3>{era.label}</h3><span>{era.range}</span><b>{era.count} <small>件藏品</small></b></div>)}</div></section>
-}
-
 function DetailPanel({ artwork, onClose, isFavorite, onFavorite }) {
   useEffect(() => {
     if (!artwork) return undefined
@@ -123,7 +120,6 @@ function App() {
   const initialFavorites = useMemo(loadFavorites, [])
   const visitorId = useMemo(getVisitorId, [])
   const [domains, setDomains] = useState(fallbackDomains)
-  const [eras, setEras] = useState(fallbackEras)
   const [featured, setFeatured] = useState(getLocalFeatured)
   const [activeDomain, setActiveDomain] = useState(fallbackDomains.includes(savedView.domain) ? savedView.domain : '全部')
   const [searchValue, setSearchValue] = useState(typeof savedView.query === 'string' ? savedView.query : '')
@@ -137,11 +133,10 @@ function App() {
 
   useEffect(() => {
     let isCurrent = true
-    Promise.all([getDomains(), getEras(), getFeaturedArtwork()])
-      .then(([apiDomains, apiEras, apiFeatured]) => {
+    Promise.all([getDomains(), getFeaturedArtwork()])
+      .then(([apiDomains, apiFeatured]) => {
         if (!isCurrent) return
         setDomains(apiDomains)
-        setEras(apiEras)
         setFeatured(apiFeatured)
       })
       .catch(() => isCurrent && setStatusMessage('数据服务暂不可用，正在展示本地研究目录。'))
@@ -195,7 +190,7 @@ function App() {
     return nextFavorites
   })
   const scrollToCollection = () => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
-  return <><Header onSearch={setSearchValue} searchValue={searchValue} setSearchValue={setSearchValue} /><main><Hero featured={featured} onExplore={scrollToCollection} isFavorite={favorites.includes(featured.id)} onFavorite={() => toggleFavorite(featured.id)} /><ResearchIntro /><Collection activeDomain={activeDomain} setActiveDomain={setActiveDomain} domains={domains} results={results} searchValue={searchValue} onOpen={setSelected} favorites={favorites} onFavorite={toggleFavorite} isLoading={isLoading} statusMessage={statusMessage} /><Timeline eras={eras} /></main><Footer /><DetailPanel artwork={selected} onClose={() => setSelected(null)} isFavorite={selected ? favorites.includes(selected.id) : false} onFavorite={toggleFavorite} /></>
+  return <><Header onSearch={setSearchValue} searchValue={searchValue} setSearchValue={setSearchValue} /><main><Hero featured={featured} onExplore={scrollToCollection} isFavorite={favorites.includes(featured.id)} onFavorite={() => toggleFavorite(featured.id)} /><ResearchIntro /><Collection activeDomain={activeDomain} setActiveDomain={setActiveDomain} domains={domains} results={results} searchValue={searchValue} onOpen={setSelected} favorites={favorites} onFavorite={toggleFavorite} isLoading={isLoading} statusMessage={statusMessage} /><ArtTimeline /></main><Footer /><DetailPanel artwork={selected} onClose={() => setSelected(null)} isFavorite={selected ? favorites.includes(selected.id) : false} onFavorite={toggleFavorite} /></>
 }
 
 createRoot(document.getElementById('root')).render(<App />)
