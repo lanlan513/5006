@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ArrowUpRight, Bookmark, ChevronDown, Compass, Eye, Library, Menu, Search, Sparkles, X } from 'lucide-react'
+import { ArrowUpRight, Bookmark, ChevronDown, Compass, Eye, Library, Menu, Mountain, Search, Sparkles, X } from 'lucide-react'
 import { domains as fallbackDomains, eras as fallbackEras, getArtworks as getLocalArtworks, getFeatured as getLocalFeatured } from './data/museumData'
 import { getDomains, getEras, getArtworks, getFeaturedArtwork, getFavorites, updateFavorites } from './services/museumApi'
 import { getVisitorId, loadFavorites, loadViewState, saveFavorites, saveViewState } from './lib/storage'
 import './styles.css'
+
+// 三维山水模块体积较大（含 Three.js），滚动到该区块时才加载
+const LandscapeStudio = lazy(() => import('./features/landscape/LandscapeStudio'))
 
 function ImageWithFallback({ src, alt, className, ...props }) {
   const [failed, setFailed] = useState(false)
@@ -22,6 +25,7 @@ function Header({ onSearch, searchValue, setSearchValue }) {
       </a>
       <nav className={open ? 'main-nav is-open' : 'main-nav'}>
         <a href="#collection">藏品研究</a>
+        <a href="#space">山水空间</a>
         <a href="#timeline">时间与风格</a>
         <a href="#method">观看方法</a>
       </nav>
@@ -195,7 +199,7 @@ function App() {
     return nextFavorites
   })
   const scrollToCollection = () => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
-  return <><Header onSearch={setSearchValue} searchValue={searchValue} setSearchValue={setSearchValue} /><main><Hero featured={featured} onExplore={scrollToCollection} isFavorite={favorites.includes(featured.id)} onFavorite={() => toggleFavorite(featured.id)} /><ResearchIntro /><Collection activeDomain={activeDomain} setActiveDomain={setActiveDomain} domains={domains} results={results} searchValue={searchValue} onOpen={setSelected} favorites={favorites} onFavorite={toggleFavorite} isLoading={isLoading} statusMessage={statusMessage} /><Timeline eras={eras} /></main><Footer /><DetailPanel artwork={selected} onClose={() => setSelected(null)} isFavorite={selected ? favorites.includes(selected.id) : false} onFavorite={toggleFavorite} /></>
+  return <><Header onSearch={setSearchValue} searchValue={searchValue} setSearchValue={setSearchValue} /><main><Hero featured={featured} onExplore={scrollToCollection} isFavorite={favorites.includes(featured.id)} onFavorite={() => toggleFavorite(featured.id)} /><ResearchIntro /><Suspense fallback={<section className="space-studio" id="space"><div className="studio-stage"><div className="canvas-frame"><div className="canvas-loading"><Mountain size={22} /><span>正在调入三维山水模块…</span></div></div></div></section>}><LandscapeStudio /></Suspense><Collection activeDomain={activeDomain} setActiveDomain={setActiveDomain} domains={domains} results={results} searchValue={searchValue} onOpen={setSelected} favorites={favorites} onFavorite={toggleFavorite} isLoading={isLoading} statusMessage={statusMessage} /><Timeline eras={eras} /></main><Footer /><DetailPanel artwork={selected} onClose={() => setSelected(null)} isFavorite={selected ? favorites.includes(selected.id) : false} onFavorite={toggleFavorite} /></>
 }
 
 createRoot(document.getElementById('root')).render(<App />)
