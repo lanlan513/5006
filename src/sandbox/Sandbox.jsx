@@ -87,31 +87,37 @@ export default function Sandbox() {
   }, [])
 
   const doUndo = useCallback(() => {
+    if (replaying) return
     setTransient(null)
     setHist((h) => undo(h))
-  }, [])
+  }, [replaying])
   const doRedo = useCallback(() => {
+    if (replaying) return
     setTransient(null)
     setHist((h) => redo(h))
-  }, [])
+  }, [replaying])
 
   const resetWork = useCallback(() => {
+    if (replaying) return
     setTransient(null)
     setHist((h) => commit(h, defaultComp(work), '复原原帖'))
     setArbitration(`已复原「${work.title}」的原帖章法`)
-  }, [work])
+  }, [work, replaying])
 
+  // 各作品的章法状态缓存：持久化以最新编辑为准，不依赖初次载入的快照。
+  const compsRef = useRef({ ...(saved.comps || {}) })
   const switchWork = useCallback((id, initialComp) => {
     const nextWork = workById[id]
     if (!nextWork) return
     setWorkId(id)
-    setHist(createHistory(initialComp ?? sanitizeComp(nextWork, saved.comps?.[id])))
+    const cached = initialComp ?? compsRef.current[id] ?? sanitizeComp(nextWork, null)
+    setHist(createHistory(sanitizeComp(nextWork, cached)))
     setTransient(null)
     setTrajectory([])
     setSelected(null)
     setReplay(null)
     setLocks({ body: false, inscription: false, seals: {} })
-  }, [saved])
+  }, [])
 
   /* ---------- 重心轨迹 ---------- */
 
@@ -128,30 +134,33 @@ export default function Sandbox() {
   /* ---------- 持久化 ---------- */
 
   useEffect(() => {
+    compsRef.current[workId] = hist.entries[hist.cursor]
     saveSandboxState({
       workId,
-      comps: { ...(saved.comps || {}), [workId]: hist.entries[hist.cursor] },
+      comps: compsRef.current,
       layers,
       snapshots
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workId, hist, layers, snapshots])
 
   /* ---------- 回放 ---------- */
 
+  // 定时推进回放帧号；帧的应用由下面的 effect 统一执行。
   useEffect(() => {
     if (!replay?.playing) return undefined
     const timer = setInterval(() => {
       setReplay((r) => {
         if (!r) return null
-        const nextIndex = r.index + 1
-        if (nextIndex >= hist.entries.length) return { ...r, playing: false }
-        setHist((h) => gotoFrame(h, nextIndex))
-        return { ...r, index: nextIndex }
+        if (r.index + 1 >= hist.entries.length) return { ...r, playing: false }
+        return { ...r, index: r.index + 1 }
       })
     }, 650)
     return () => clearInterval(timer)
   }, [replay?.playing, hist.entries.length])
+
+  useEffect(() => {
+    if (replay) setHist((h) => gotoFrame(h, replay.index))
+  }, [replay])
 
   const startReplay = useCallback(() => {
     setTransient(null)
@@ -345,7 +354,6 @@ export default function Sandbox() {
                 value={replay.index}
                 onChange={(event) => {
                   const index = Number(event.target.value)
-                  setHist((h) => gotoFrame(h, index))
                   setReplay((r) => ({ ...r, index, playing: false }))
                 }}
                 aria-label="回放进度"

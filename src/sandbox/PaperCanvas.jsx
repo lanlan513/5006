@@ -42,6 +42,7 @@ export default function PaperCanvas({
   const { w, h } = layout.paper
   const svgRef = useRef(null)
   const groupRef = useRef(null)
+  const arbiterRef = useRef(null)
   const [view, setView] = useState({ s: 1, tx: 0, ty: 0 })
   const [mode, setMode] = useState('idle')
   const [flashLock, setFlashLock] = useState(null)
@@ -59,17 +60,6 @@ export default function PaperCanvas({
 
   const vbWidth = w + PAD * 2
   const vbHeight = h + PAD * 2
-
-  /** 客户区坐标 → 纸面坐标（经 SVG CTM 逆变换，含视野缩放平移）。 */
-  const toPaper = (clientX, clientY) => {
-    const svg = svgRef.current
-    const group = groupRef.current
-    if (!svg || !group) return { x: 0, y: 0 }
-    const ctm = group.getScreenCTM()
-    if (!ctm) return { x: 0, y: 0 }
-    const pt = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse())
-    return { x: pt.x, y: pt.y }
-  }
 
   /** 客户区位移 → 纸面位移。 */
   const clientDeltaToPaper = (dx, dy) => {
@@ -201,9 +191,9 @@ export default function PaperCanvas({
     }
   }
 
+  // 仲裁器挂在 <svg> 上：视野按钮等 HTML 控件在 svg 之外，不会被指针捕获波及。
   useEffect(() => {
-    const node = svgRef.current.parentElement
-    const arbiter = new GestureArbiter(node, {
+    const arbiter = new GestureArbiter(svgRef.current, {
       hitTest: (event) => hooksRef.current.hitTest(event),
       onMode: (m, reason) => hooksRef.current.onMode(m, reason),
       onReject: (reason, hit) => hooksRef.current.onReject(reason, hit),
@@ -218,17 +208,14 @@ export default function PaperCanvas({
       onViewPan: (delta) => hooksRef.current.onViewPan(delta),
       onViewZoom: (payload) => hooksRef.current.onViewZoom(payload)
     })
-    arbiter.enabled = !replaying
+    arbiterRef.current = arbiter
     return () => arbiter.destroy()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 回放期间冻结手势。
-  const arbiterEnabledRef = useRef(true)
   useEffect(() => {
-    arbiterEnabledRef.current = !replaying
-    const node = svgRef.current?.parentElement
-    if (node) node.style.pointerEvents = replaying ? 'none' : 'auto'
+    if (arbiterRef.current) arbiterRef.current.enabled = !replaying
   }, [replaying])
 
   const zoomBy = (factor) => {

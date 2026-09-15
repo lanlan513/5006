@@ -19,17 +19,17 @@ export const WORKS = [
     fontId: 'xing',
     scriptName: '行书',
     note: '天下第一行书。原帖字距紧、行距宽，行气贯通而留白从容。',
-    paper: { w: 1000, h: 720 },
-    text: '永和九年岁在癸丑暮春之初会于会稽山阴之兰亭群贤毕至少长咸集此地有崇山峻岭茂林修竹又有清流激湍映带左右列坐其次虽无丝竹管弦之盛亦足以畅叙幽情',
+    paper: { w: 1000, h: 760 },
+    text: '永和九年岁在癸丑暮春之初会于会稽山阴之兰亭群贤毕至少长咸集此地有崇山峻岭茂林修竹又有清流激湍映带左右列坐其次虽无丝竹管弦之盛亦足以畅叙幽情是日也天朗气清',
     inscriptionText: '永和九年三月书',
     defaults: {
       fontSize: 44,
-      charGap: 0.18,
-      colGap: 1.85,
+      charGap: 0.08,
+      colGap: 2.55,
       margins: { t: 0.09, r: 0.09, b: 0.09, l: 0.05 },
       inscription: { x: 0.062, y: 0.6, scale: 0.4, rotation: 0 },
       seals: [
-        { id: 'seal-name', chars: '和', x: 0.062, y: 0.88, size: 52, rotation: -3 },
+        { id: 'seal-name', chars: '和', x: 0.058, y: 0.88, size: 52, rotation: -3 },
         { id: 'seal-lead', chars: '吉祥', x: 0.945, y: 0.14, size: 64, rotation: 2 }
       ]
     }
