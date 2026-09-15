@@ -1,5 +1,6 @@
 import { artworks, domains, eras, getArtwork } from '../../src/data/museumData.js'
 import { buildTaxonomy, subjectIds, subjects } from '../../src/data/taxonomy.js'
+import { buildTechniqueIndex, techniqueIds, techniques } from '../../src/data/techniques.js'
 
 function includesQuery(artwork, query) {
   const normalizedQuery = query.trim().toLocaleLowerCase('zh-CN')
@@ -69,4 +70,26 @@ export function getTaxonomyView() {
       totalArtworks: taxonomy.totalArtworks
     }
   }
+}
+
+/** 表现技法分类视图：与画科分类同构，索引只下发作品 ID，作品对象不复制。 */
+export function getTechniqueView() {
+  const index = buildTechniqueIndex(artworks)
+  const idsByTechnique = Object.fromEntries(
+    techniqueIds.map((id) => [id, index.idsByTechnique.get(id)])
+  )
+  return {
+    techniques,
+    index: {
+      idsByTechnique,
+      counts: index.counts,
+      warnings: index.warnings,
+      multiTechnique: index.multiTechnique,
+      totalTagged: index.totalTagged
+    }
+  }
+}
+
+export function listTechniques() {
+  return techniques
 }

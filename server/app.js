@@ -1,7 +1,7 @@
 import express from 'express'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { findArtwork, getFeaturedArtwork, getTaxonomyView, listArtworks, listDomains, listEras, listSubjects } from './repositories/artworkRepository.js'
+import { findArtwork, getFeaturedArtwork, getTaxonomyView, getTechniqueView, listArtworks, listDomains, listEras, listSubjects } from './repositories/artworkRepository.js'
 import { listFavorites, replaceFavorites } from './repositories/favoriteRepository.js'
 
 const app = express()
@@ -25,6 +25,10 @@ app.get('/api/artworks', (request, response) => {
 
 app.get('/api/taxonomy', (_request, response) => {
   response.json({ data: getTaxonomyView() })
+})
+
+app.get('/api/techniques', (_request, response) => {
+  response.json({ data: getTechniqueView() })
 })
 
 app.get('/api/artworks/featured', (_request, response) => {

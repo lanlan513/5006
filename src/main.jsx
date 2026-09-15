@@ -3,39 +3,45 @@ import { createRoot } from 'react-dom/client'
 import { ArrowUpRight, Bookmark, ChevronDown, Menu, Search, X } from 'lucide-react'
 import { artworks as localArtworks, eras as localEras, getFeatured, getArtworks as queryLocal } from './data/museumData'
 import { buildTaxonomy, subjects } from './data/taxonomy'
-import { getArtworks, getEras, getFeaturedArtwork, getFavorites, getTaxonomy, updateFavorites } from './services/museumApi'
+import { getArtworks, getEras, getFeaturedArtwork, getFavorites, getTaxonomy, getTechniques, updateFavorites } from './services/museumApi'
 import { getVisitorId, loadFavorites, saveFavorites } from './lib/storage'
 import TaxonomySection from './components/TaxonomySection'
+import CompareStudio from './components/CompareStudio'
 import ArtworkDrawer from './components/ArtworkDrawer'
 import { LazyPainting, MissingText } from './components/common'
 import './styles.css'
 
-function Header({ query, setQuery }) {
+function Header({ query, setQuery, view, onNavigate }) {
   const [open, setOpen] = useState(false)
+  const go = (next) => { onNavigate(next); setOpen(false) }
   return <header className="site-header taxonomy-header">
     <div className="header-inner">
-      <a className="brand" href="#top" aria-label="回到首页">
+      <a className="brand" href="#top" onClick={(e) => { e.preventDefault(); go('taxonomy') }} aria-label="回到首页">
         <span className="brand-mark">科</span>
         <span><b>中国画科馆</b><small>TAXONOMY OF PAINTING</small></span>
       </a>
       <nav className={open ? 'main-nav is-open' : 'main-nav'}>
-        {subjects.map((subject) => (
+        <a href="#taxonomy" className={view === 'taxonomy' ? 'is-current' : ''} onClick={(e) => { e.preventDefault(); go('taxonomy') }}>画科分类</a>
+        <a href="#compare" className={view === 'compare' ? 'is-current' : ''} onClick={(e) => { e.preventDefault(); go('compare') }}>表现技法比较</a>
+        {view === 'taxonomy' ? subjects.map((subject) => (
           <a key={subject.id} href={`#${subject.id}`} onClick={() => setOpen(false)}>{subject.name}</a>
-        ))}
+        )) : null}
       </nav>
       <div className="header-actions">
-        <label className="header-search">
-          <Search size={15} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="检索题材、构图、对象…" aria-label="检索作品" />
-          {query ? <button className="search-clear" onClick={() => setQuery('')} aria-label="清空检索"><X size={13} /></button> : null}
-        </label>
+        {view === 'taxonomy' ? (
+          <label className="header-search">
+            <Search size={15} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="检索题材、构图、对象…" aria-label="检索作品" />
+            {query ? <button className="search-clear" onClick={() => setQuery('')} aria-label="清空检索"><X size={13} /></button> : null}
+          </label>
+        ) : <span className="header-mode-tag">怎么画 · HOW IT IS PAINTED</span>}
         <button className="mobile-menu" onClick={() => setOpen(!open)} aria-label="打开导航">{open ? <X size={20} /> : <Menu size={20} />}</button>
       </div>
     </div>
   </header>
 }
 
-function Hero({ featured, onExplore, isFavorite, onFavorite }) {
+function Hero({ featured, onExplore, onCompare, isFavorite, onFavorite }) {
   return <section className="hero taxonomy-hero" id="top">
     <div className="hero-copy">
       <p className="eyebrow"><span className="eyebrow-line" />画有分科 · 观有各法</p>
@@ -48,6 +54,9 @@ function Hero({ featured, onExplore, isFavorite, onFavorite }) {
       <div className="hero-note">
         <span>切换画科会保留浏览位置</span><span>图像懒加载 · 缺项如实标注</span>
       </div>
+      <a className="hero-compare-link" href="#compare" onClick={(e) => { e.preventDefault(); onCompare() }}>
+        或换一种看法：按「工笔 / 写意 / 没骨」比较怎么画 →
+      </a>
     </div>
     <div className="hero-visual">
       <div className="hero-image-wrap hero-scroll-frame">
@@ -91,6 +100,10 @@ function Footer() {
   </footer>
 }
 
+function viewFromHash() {
+  return window.location.hash.startsWith('#compare') ? 'compare' : 'taxonomy'
+}
+
 function subjectFromHash() {
   const id = window.location.hash.replace('#', '')
   return subjects.some((s) => s.id === id) ? id : null
@@ -100,6 +113,7 @@ function App() {
   const [artworkRows, setArtworkRows] = useState(localArtworks)
   const [eras, setEras] = useState(localEras)
   const [featured, setFeatured] = useState(() => getFeatured())
+  const [view, setView] = useState(() => viewFromHash())
   const [activeSubjectId, setActiveSubjectId] = useState(() => subjectFromHash() ?? subjects[1].id)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState(() => queryLocal({ query: '' }))
@@ -121,6 +135,8 @@ function App() {
       .catch(() => alive && setStatusMessage('数据服务暂不可用，正在展示本地分类目录。'))
     getFeaturedArtwork().then((item) => alive && setFeatured(item)).catch(() => {})
     getEras().then((list) => alive && setEras(list)).catch(() => {})
+    // 技法比较页同样以本地数据构建索引，仅在服务不可达时给出提示。
+    getTechniques().catch(() => {}).finally(() => {})
     return () => { alive = false }
   }, [])
 
@@ -152,44 +168,63 @@ function App() {
     }
   }, [favorites, visitorId])
 
-  // hash 同步：导航/详情跳科/前进后退。
+  // hash 同步：视图（画科馆 / 技法比较）、分科导航、前进后退。
   useEffect(() => {
     const onHash = () => {
+      setView(viewFromHash())
       const id = subjectFromHash()
       if (id) setActiveSubjectId(id)
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+  const navigate = (next) => {
+    setView(next)
+    const target = next === 'compare' ? '#compare' : '#taxonomy'
+    if (window.location.hash !== target) window.history.pushState(null, '', target)
+  }
   const changeSubject = (id) => {
+    if (view !== 'taxonomy') navigate('taxonomy')
     setActiveSubjectId(id)
     if (window.location.hash !== `#${id}`) window.history.pushState(null, '', `#${id}`)
   }
 
   const toggleFavorite = (id) => setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  const scrollToTaxonomy = () => document.getElementById('taxonomy')?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToTaxonomy = () => {
+    if (view !== 'taxonomy') {
+      navigate('taxonomy')
+      requestAnimationFrame(() => document.getElementById('taxonomy')?.scrollIntoView({ behavior: 'smooth' }))
+    } else {
+      document.getElementById('taxonomy')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   return <>
-    <Header query={query} setQuery={setQuery} />
+    <Header query={query} setQuery={setQuery} view={view} onNavigate={navigate} />
     <main>
       <Hero
         featured={featured}
         onExplore={scrollToTaxonomy}
+        onCompare={() => navigate('compare')}
         isFavorite={favorites.includes(featured.id)}
         onFavorite={() => toggleFavorite(featured.id)}
       />
-      <TaxonomySection
-        activeSubjectId={activeSubjectId}
-        onSubjectChange={changeSubject}
-        artworkRows={artworkRows}
-        taxonomy={taxonomy}
-        query={query}
-        results={results}
-        onOpen={setSelected}
-        statusMessage={statusMessage}
-        favorites={favorites}
-        onToggleFavorite={toggleFavorite}
-      />
+      {view === 'compare' ? (
+        <CompareStudio artworkRows={artworkRows} onOpen={setSelected} statusMessage={statusMessage} />
+      ) : (
+        <TaxonomySection
+          activeSubjectId={activeSubjectId}
+          onSubjectChange={changeSubject}
+          artworkRows={artworkRows}
+          taxonomy={taxonomy}
+          query={query}
+          results={results}
+          onOpen={setSelected}
+          statusMessage={statusMessage}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
+        />
+      )}
       <Timeline eras={eras} />
     </main>
     <Footer />

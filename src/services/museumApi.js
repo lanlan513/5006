@@ -51,6 +51,13 @@ export async function getTaxonomy() {
   return data
 }
 
+/** 服务端构建的表现技法分类法，失败由前端本地 buildTechniqueIndex 兜底。 */
+export async function getTechniques() {
+  const data = await request('/techniques')
+  if (!data || !Array.isArray(data.techniques) || !data.index) throw new Error('技法数据格式无效。')
+  return data
+}
+
 export async function getFavorites(visitorId) {
   const favorites = await request('/favorites', { headers: { 'X-Visitor-Id': visitorId } })
   if (!Array.isArray(favorites)) throw new Error('收藏数据格式无效。')

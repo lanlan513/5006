@@ -37,6 +37,25 @@ const dims = {
   jiehua: [980, 560]
 }
 
+/**
+ * 作品示意画的自然像素尺寸（与生成器 viewBox 一致）。
+ * 比较浏览器需要以“图片自身坐标”定位热点，故统一从此取尺寸与纵横比。
+ */
+export function artworkNaturalSize(artwork) {
+  const art = artwork?.art
+  if (!art) return null
+  if (art.kind === 'flowerbird' && art.format === 'hanging') return { width: 620, height: 880 }
+  const pair = dims[art.kind] ?? dims.figure
+  return { width: pair[0], height: pair[1] }
+}
+
+/** 比较视口内 contain 适配后的 CSS 尺寸（box 已固定，图片按短边居中）。 */
+export function containSize(natural, box) {
+  if (!natural) return { width: box.width, height: box.height }
+  const scale = Math.min(box.width / natural.width, box.height / natural.height)
+  return { width: natural.width * scale, height: natural.height * scale }
+}
+
 function ridge(rand, x0, x1, baseY, amp, points = 7) {
   const step = (x1 - x0) / points
   let path = `M ${x0.toFixed(1)} ${baseY.toFixed(1)}`
@@ -215,12 +234,95 @@ function paintFigure(art, rand, id) {
 }
 
 function paintFlowerbird(art, rand, id) {
-  const [w, h] = dims.flowerbird
+  const hanging = art.format === 'hanging'
+  const [w, h] = hanging ? [620, 880] : dims.flowerbird
   const inkOnly = art.ink === true
+  const mogu = art.mogu === true
   let inner = ''
   const stem = inkOnly ? INK[2] : '#6d5438'
 
-  if (art.motif === 'lotus') {
+  if (art.motif === 'grapes') {
+    // 大写意立轴：泼墨葡萄叶 + 狂草藤梢，下半大片留白
+    inner += `<path d="M ${w + 20} 40 Q 330 120 250 300 Q 200 400 300 470" stroke="${INK[1]}" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.85"/>`
+    inner += `<path d="M ${w - 60} 90 Q 200 220 160 380" stroke="${INK[3]}" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    // 泼墨叶：饱墨一次泼出，边缘晕渗，不勾轮廓
+    const leaves = [[300, 240, 95, INK[0], 0.9], [430, 320, 70, INK[1], 0.82], [200, 360, 62, INK[2], 0.8], [360, 150, 58, INK[2], 0.7]]
+    leaves.forEach(([cx, cy, r, c, op]) => {
+      for (let i = 0; i < 5; i += 1) {
+        const a = (i / 5) * Math.PI * 2 + rand()
+        inner += `<ellipse cx="${(cx + Math.cos(a) * r * 0.34).toFixed(0)}" cy="${(cy + Math.sin(a) * r * 0.3).toFixed(0)}" rx="${(r * 0.52).toFixed(0)}" ry="${(r * 0.34).toFixed(0)}" fill="${c}" opacity="${(op * (0.7 + rand() * 0.3)).toFixed(2)}" transform="rotate(${(a * 180 / Math.PI).toFixed(0)} ${cx} ${cy})"/>`
+      }
+    })
+    // 葡萄：墨分五色，一笔一圈，浓淡一次成形
+    const clusters = [[300, 330], [420, 400], [250, 440]]
+    clusters.forEach(([cx, cy]) => {
+      for (let i = 0; i < 9; i += 1) {
+        const gx = cx + (rand() - 0.5) * 90
+        const gy = cy + (rand() - 0.5) * 80
+        const tone = INK[1 + Math.floor(rand() * 5)]
+        inner += `<circle cx="${gx.toFixed(0)}" cy="${gy.toFixed(0)}" r="${(11 + rand() * 5).toFixed(1)}" fill="${tone}" opacity="${(0.62 + rand() * 0.34).toFixed(2)}"/>`
+        inner += `<circle cx="${(gx - 3).toFixed(0)}" cy="${(gy - 3).toFixed(0)}" r="2.6" fill="${INK[7]}" opacity="0.5"/>`
+      }
+    })
+    inner += seal(w - 74, h - 110, 32, '写')
+  } else if (art.motif === 'heron') {
+    // 八大减笔立轴：孤石、缩颈水鸟、一茎长荷，大面积留白
+    const rock = `<path d="M 150 ${h - 210} Q 250 ${h - 262} 380 ${h - 224} Q 470 ${h - 196} 470 ${h - 176} L 140 ${h - 176} Z" fill="${INK[3]}" opacity="0.78"/>`
+    inner += rock
+    // 荷茎：长锋一笔贯穿
+    inner += `<path d="M 430 ${h - 200} Q 424 ${h - 420} 400 ${h - 560}" stroke="${INK[2]}" stroke-width="5" fill="none" stroke-linecap="round"/>`
+    inner += `<path d="M 330 ${h - 580} q 120 -34 160 30 q -80 46 -160 -30 Z" fill="${INK[4]}" opacity="0.75"/>`
+    // 两只缩颈水鸟：三五个简练墨块
+    ;[[250, h - 240], [340, h - 228]].forEach(([x, y], i) => {
+      const s = i === 0 ? 1 : 0.82
+      inner += `<ellipse cx="${x}" cy="${y}" rx="${34 * s}" ry="${30 * s}" fill="${INK[i ? 2 : 1]}" opacity="0.9"/>`
+      inner += `<circle cx="${x + 16 * s}" cy="${y - 22 * s}" r="${13 * s}" fill="none" stroke="${INK[1]}" stroke-width="2.6"/>`
+      inner += `<circle cx="${x + 20 * s}" cy="${y - 26 * s}" r="3.4" fill="${INK[0]}"/>`
+      inner += `<path d="M ${x + 26 * s} ${y - 20 * s} l 18 ${4}" stroke="${INK[1]}" stroke-width="2.4"/>`
+    })
+    inner += seal(w - 78, h - 96, 32, '简')
+  } else if (art.motif === 'peony') {
+    // 没骨牡丹：直接以彩色点染成瓣，全程无墨线
+    const px = 330
+    const py = 270
+    for (let ring = 3; ring >= 0; ring -= 1) {
+      const count = 7 + ring * 3
+      const rr = ring === 0 ? 0 : 26 + ring * 34
+      for (let i = 0; i < count; i += 1) {
+        const a = (i / count) * Math.PI * 2 + ring * 0.5
+        const cx = px + Math.cos(a) * rr
+        const cy = py + Math.sin(a) * rr * 0.86
+        const light = ring >= 2
+        const fill = light ? '#f0c2cf' : ['#d97e97', '#cf6685', '#e092a8'][i % 3]
+        inner += `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${(30 - ring * 3).toFixed(0)}" ry="${(22 - ring * 2).toFixed(0)}" fill="${fill}" opacity="${light ? 0.82 : 0.9}" transform="rotate(${(a * 180 / Math.PI).toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`
+      }
+    }
+    inner += `<ellipse cx="${px}" cy="${py}" rx="20" ry="16" fill="#c75d7c" opacity="0.92"/>`
+    // 枝叶：水色趁湿相接，轮廓藏在颜色相接处
+    ;[[470, 470, 96, 42, -18, '#6f9480'], [300, 540, 104, 44, 12, '#5d8270'], [520, 360, 70, 32, 30, '#7ba08c']].forEach(([cx, cy, rx, ry, rot, c]) => {
+      inner += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${c}" opacity="0.82" transform="rotate(${rot} ${cx} ${cy})"/>`
+      inner += `<path d="M ${cx - rx * 0.5} ${cy} Q ${cx} ${cy + 8} ${cx + rx * 0.5} ${cy - 4}" stroke="${INK[4]}" stroke-width="1.4" fill="none" opacity="0.5"/>`
+    })
+    inner += seal(w - 86, h - 88, 32, '没')
+  } else if (art.motif === 'insect') {
+    // 没骨草虫：散点折枝，翼翅以薄色渍染、不见勾线
+    const spots = [[220, 250, '#e3a9bd'], [480, 300, '#d8b77e'], [300, 470, '#cfa6b6']]
+    spots.forEach(([cx, cy, fill], k) => {
+      for (let i = 0; i < 6; i += 1) {
+        const a = (i / 6) * Math.PI * 2
+        inner += `<ellipse cx="${(cx + Math.cos(a) * 34).toFixed(0)}" cy="${(cy + Math.sin(a) * 30).toFixed(0)}" rx="26" ry="18" fill="${fill}" opacity="${0.66 + (k % 2) * 0.16}" transform="rotate(${(a * 180 / Math.PI).toFixed(0)} ${cx} ${cy})"/>`
+      }
+      inner += `<circle cx="${cx}" cy="${cy}" r="10" fill="#c9a05f" opacity="0.9"/>`
+    })
+    // 草虫：透明翼是颜色厚薄，而非勾出的线
+    ;[[420, 480], [250, 560]].forEach(([cx, cy]) => {
+      inner += `<ellipse cx="${cx - 16}" cy="${cy - 8}" rx="22" ry="9" fill="#9fb0b6" opacity="0.34" transform="rotate(-18 ${cx - 16} ${cy - 8})"/>`
+      inner += `<ellipse cx="${cx + 16}" cy="${cy - 8}" rx="22" ry="9" fill="#9fb0b6" opacity="0.34" transform="rotate(18 ${cx + 16} ${cy - 8})"/>`
+      inner += `<ellipse cx="${cx}" cy="${cy + 4}" rx="7" ry="18" fill="${INK[2]}" opacity="0.8"/>`
+    })
+    inner += `<path d="M 120 620 Q 360 560 620 640" stroke="#7a9076" stroke-width="5" fill="none" opacity="0.7" stroke-linecap="round"/>`
+    inner += seal(w - 84, h - 86, 34, '骨')
+  } else if (art.motif === 'lotus') {
     inner += `<ellipse cx="470" cy="520" rx="300" ry="90" fill="${inkOnly ? INK[6] : '#6f9480'}" opacity="0.55"/>`
     inner += `<ellipse cx="250" cy="560" rx="120" ry="40" fill="${inkOnly ? INK[5] : '#547d69'}" opacity="0.6"/>`
     inner += `<g>${petalLayer(360, 300, 130, inkOnly ? '#eceae2' : '#e7a9bd', inkOnly ? INK[2] : '#b25677')}</g>`
@@ -268,8 +370,8 @@ function paintFlowerbird(art, rand, id) {
     for (let i = 0; i < 8; i += 1) inner += butterfly(rand, 120 + rand() * 480, 120 + rand() * 440, inkOnly)
   }
 
-  inner += seal(w - 84, h - 86, 34, '花')
-  return frame(inner, art.motif === 'crane' ? (inkOnly ? BG.ink : '#dbe4ea') : BG.color, dims.flowerbird, id)
+  if (!['grapes', 'heron', 'peony', 'insect'].includes(art.motif)) inner += seal(w - 84, h - 86, 34, '花')
+  return frame(inner, art.motif === 'crane' ? (inkOnly ? BG.ink : '#dbe4ea') : (mogu ? '#f4f0e6' : BG.color), [w, h], id)
 }
 
 function petalLayer(cx, cy, r, fill, stroke) {
