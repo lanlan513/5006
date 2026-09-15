@@ -23,6 +23,7 @@ function Header({ onSearch, searchValue, setSearchValue }) {
       <nav className={open ? 'main-nav is-open' : 'main-nav'}>
         <a href="#collection">藏品研究</a>
         <a href="#timeline">时间与风格</a>
+        <a href="/materials.html">材料探索</a>
         <a href="#method">观看方法</a>
       </nav>
       <div className="header-actions">

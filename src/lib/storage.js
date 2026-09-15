@@ -1,6 +1,8 @@
 const FAVORITES_KEY = 'cam-favorites'
 const VIEW_STATE_KEY = 'cam-view-state'
 const VISITOR_ID_KEY = 'cam-visitor-id'
+const MATERIAL_TRAIL_KEY = 'cam-material-trail'
+const MATERIAL_HISTORY_KEY = 'cam-material-history'
 
 export function loadFavorites() {
   try {
@@ -45,5 +47,41 @@ export function getVisitorId() {
     return visitorId
   } catch {
     return `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+}
+
+// 材料探索器：当前浏览路径（面包屑对应的节点栈）
+export function loadMaterialTrail() {
+  try {
+    const value = JSON.parse(localStorage.getItem(MATERIAL_TRAIL_KEY) || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+export function saveMaterialTrail(trail) {
+  try {
+    localStorage.setItem(MATERIAL_TRAIL_KEY, JSON.stringify(trail))
+  } catch {
+    // Storage can be disabled in private or embedded browsing contexts.
+  }
+}
+
+// 材料探索器：浏览历史（含每个节点当时所处的完整路径，便于原路返回）
+export function loadMaterialHistory() {
+  try {
+    const value = JSON.parse(localStorage.getItem(MATERIAL_HISTORY_KEY) || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+export function saveMaterialHistory(entries) {
+  try {
+    localStorage.setItem(MATERIAL_HISTORY_KEY, JSON.stringify(entries))
+  } catch {
+    // Storage can be disabled in private or embedded browsing contexts.
   }
 }
